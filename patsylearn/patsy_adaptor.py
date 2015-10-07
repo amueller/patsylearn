@@ -2,6 +2,7 @@ import numpy as np
 
 from sklearn.base import BaseEstimator, TransformerMixin, clone
 from sklearn.utils.metaestimators import if_delegate_has_method
+from sklearn.utils import column_or_1d
 from patsy import dmatrix, dmatrices
 
 
@@ -24,6 +25,9 @@ class PatsyModel(BaseEstimator):
         design_y, design_X = dmatrices(self.formula, data)
         self.design_y_ = design_y.design_info
         self.design_X_ = design_X.design_info
+        # convert to 1d vector so we don't get a warning
+        # from sklearn.
+        design_y = column_or_1d(design_y)
         est = clone(self.estimator)
         self.estimator_ = est.fit(design_X, design_y)
         return self
@@ -50,7 +54,34 @@ class PatsyTransformer(BaseEstimator, TransformerMixin):
         self.formula = formula
 
     def fit(self, data):
+        """Fit the scikit-learn model using the formula.
+
+        Parameters
+        ----------
+        data : dict-like (pandas dataframe)
+            Input data. Contains features and possible labels.
+            Column names need to match variables in formula.
+        """
+        self.fit_transform(data)
         return self
 
+    def fit_transform(self, data):
+        """Fit the scikit-learn model using the formula and transform it.
+
+        Parameters
+        ----------
+        data : dict-like (pandas dataframe)
+            Input data. Contains features and possible labels.
+            Column names need to match variables in formula.
+
+        Returns
+        -------
+        X_transform : ndarray
+            Transformed data
+        """
+        design = dmatrix(self.formula, data)
+        self.design_ = design.design_info
+        return np.array(design)
+
     def transform(self, data):
-        pass
+        return np.array(dmatrix(self.design_, data))
