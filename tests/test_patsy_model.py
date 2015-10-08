@@ -1,0 +1,84 @@
+import numpy as np
+import patsy
+from sklearn.utils.mocking import CheckingClassifier
+from sklearn.utils.testing import assert_raise_message
+from numpy.testing import assert_array_equal
+
+from patsylearn import PatsyModel, PatsyTransformer
+
+
+def test_scope_model():
+    data = patsy.demo_data("x1", "x2", "x3", "y")
+
+    def myfunc(x):
+        tmp = np.ones_like(x)
+        tmp.fill(42)
+        return tmp
+
+    def check_X(X):
+        return np.all(X[:, 1] == 42)
+
+    # checking classifier raises error if check_X doesn't return true.
+    # this checks that myfunc was actually applied
+    est = PatsyModel(CheckingClassifier(check_X=check_X), "y ~ x1 + myfunc(x2)")
+    est.fit(data)
+
+
+def test_scope_transformer():
+    data = patsy.demo_data("x1", "x2", "x3", "y")
+
+    def myfunc(x):
+        tmp = np.ones_like(x)
+        tmp.fill(42)
+        return tmp
+
+    est = PatsyTransformer("x1 + myfunc(x2)")
+    est.fit(data)
+    data_trans = est.transform(data)
+    assert_array_equal(data_trans[:, 1], 42)
+
+    est = PatsyTransformer("x1 + myfunc(x2)")
+    data_trans = est.fit_transform(data)
+    assert_array_equal(data_trans[:, 1], 42)
+
+
+def test_statefull_mean_transformer():
+    pass
+
+
+def test_error_on_y_transform():
+    data = patsy.demo_data("x1", "x2", "x3", "y")
+    est = PatsyTransformer("y ~ x1 + x2")
+    msg = ("encountered outcome variables for a model"
+           " that does not expect them")
+    assert_raise_message(patsy.PatsyError, msg, est.fit, data)
+    assert_raise_message(patsy.PatsyError, msg, est.fit_transform, data)
+
+
+def test_intercept_model():
+    data = patsy.demo_data("x1", "x2", "x3", "y")
+
+    def check_X_no_intercept(X):
+        return X.shape[1] == 2
+
+    # check wether X contains only the two features, no intercept
+    est = PatsyModel(CheckingClassifier(check_X=check_X_no_intercept),
+                     "y ~ x1 + x2")
+    est.fit(data)
+    # predict checks applying to new data
+    est.predict(data)
+
+    def check_X_intercept(X):
+        shape_correct = X.shape[1] == 3
+        first_is_intercept = np.all(X[:, 0] == 1)
+        return shape_correct and first_is_intercept
+
+    # check wether X contains only the two features, no intercept
+    est = PatsyModel(CheckingClassifier(check_X=check_X_intercept),
+                     "y ~ x1 + x2", add_intercept=True)
+    est.fit(data)
+    est.predict(data)
+
+
+def test_no_intercept_transformer():
+    pass
