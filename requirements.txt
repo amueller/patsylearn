@@ -1,0 +1,2 @@
+scikit-learn >= 0.16
+patsy >= 0.4
