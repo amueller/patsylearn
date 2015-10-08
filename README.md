@@ -1,7 +1,7 @@
 Patsy-Learn
 ===========
 A simple patsy to scikit-learn adaptor.
-This is pre-alpha.
+Be aware that the content of this package is pretty experimental. Feedback welcome.
 
 This package provides two classes:
 
