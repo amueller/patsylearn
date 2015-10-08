@@ -8,7 +8,7 @@ from patsy import dmatrix, dmatrices, EvalEnvironment, ModelDesc, INTERCEPT
 
 # TODO: fit_transform fit_predicdt in PatsyModel?
 # TODO: Allow pandas dataframe output in Transformer?
-
+# TODO: unsupervised models? missing output variable?
 
 def _drop_intercept(formula, add_intercept):
     if not add_intercept:

@@ -1,7 +1,7 @@
 import numpy as np
 import patsy
 from sklearn.utils.mocking import CheckingClassifier
-from sklearn.utils.testing import assert_raise_message
+from sklearn.utils.testing import assert_raise_message, assert_equal
 from numpy.testing import assert_array_equal
 
 from patsylearn import PatsyModel, PatsyTransformer
@@ -42,10 +42,6 @@ def test_scope_transformer():
     assert_array_equal(data_trans[:, 1], 42)
 
 
-def test_statefull_mean_transformer():
-    pass
-
-
 def test_error_on_y_transform():
     data = patsy.demo_data("x1", "x2", "x3", "y")
     est = PatsyTransformer("y ~ x1 + x2")
@@ -73,12 +69,58 @@ def test_intercept_model():
         first_is_intercept = np.all(X[:, 0] == 1)
         return shape_correct and first_is_intercept
 
-    # check wether X contains only the two features, no intercept
+    # check wether X does contain intercept
     est = PatsyModel(CheckingClassifier(check_X=check_X_intercept),
                      "y ~ x1 + x2", add_intercept=True)
     est.fit(data)
     est.predict(data)
 
 
-def test_no_intercept_transformer():
-    pass
+def test_intercept_transformer():
+    data = patsy.demo_data("x1", "x2", "x3", "y")
+
+    # check wether X contains only the two features, no intercept
+    est = PatsyTransformer("x1 + x2")
+    est.fit(data)
+    assert_equal(est.transform(data).shape[1], 2)
+
+    # check wether X does contain intercept
+    est = PatsyTransformer("x1 + x2", add_intercept=True)
+    est.fit(data)
+    data_transformed = est.transform(data)
+    assert_array_equal(data_transformed[:, 0], 1)
+    assert_equal(est.transform(data).shape[1], 3)
+
+
+def test_stateful_transform():
+    data_train = patsy.demo_data("x1", "x2", "y")
+    data_train['x1'][:] = 1
+    # mean of x1 is 1
+    data_test = patsy.demo_data("x1", "x2", "y")
+    data_test['x1'][:] = 0
+
+    # center x1
+    est = PatsyTransformer("center(x1) + x2")
+    est.fit(data_train)
+    data_trans = est.transform(data_test)
+    # make sure that mean of training, not test data was removed
+    assert_array_equal(data_trans[:, 0], -1)
+
+
+def test_stateful_model():
+    data_train = patsy.demo_data("x1", "x2", "y")
+    data_train['x1'][:] = 1
+    # mean of x1 is 1
+    data_test = patsy.demo_data("x1", "x2", "y")
+    data_test['x1'][:] = 0
+
+    # center x1
+    est = PatsyModel(CheckingClassifier(), "y ~ center(x1) + x2")
+    est.fit(data_train)
+
+    def check_centering(X):
+        return np.all(X[:, 0] == -1)
+
+    est.estimator_.check_X = check_centering
+    # make sure that mean of training, not test data was removed
+    est.predict(data_test)
