@@ -9,7 +9,7 @@ This package provides two classes:
 * A scikit-learn transformer, that uses a patsy formula to transform and select features.
 
 Both classes work on pandas DataFrames. If you want to use PatsyModel for a
-supervised estiamator, the input dataframe is expected to contain both the data
+supervised estimator, the input dataframe is expected to contain both the data
 and the target.
 
 Example
