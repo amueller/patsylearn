@@ -24,6 +24,9 @@ def test_scope_model():
     est = PatsyModel(CheckingClassifier(check_X=check_X), "y ~ x1 + myfunc(x2)")
     est.fit(data)
 
+    # test feature names
+    assert_equal(est.feature_names_, ["x1", "myfunc(x2)"])
+
 
 def test_scope_transformer():
     data = patsy.demo_data("x1", "x2", "x3", "y")
@@ -41,6 +44,9 @@ def test_scope_transformer():
     est = PatsyTransformer("x1 + myfunc(x2)")
     data_trans = est.fit_transform(data)
     assert_array_equal(data_trans[:, 1], 42)
+
+    # test feature names
+    assert_equal(est.feature_names_, ["x1", "myfunc(x2)"])
 
 
 def test_error_on_y_transform():

@@ -62,6 +62,11 @@ class PatsyModel(BaseEstimator):
         example for using it in scikit transformers with dataframe as input
         use ``"dataframe"``
 
+    Attributes
+    ----------
+    feature_names_ : list of string
+        Column names / keys of training data.
+
     Note
     ----
     PastyModel does by default not add an intercept, even if you
@@ -92,6 +97,7 @@ class PatsyModel(BaseEstimator):
                                        NA_action=self.NA_action)
         self.design_y_ = design_y.design_info
         self.design_X_ = design_X.design_info
+        self.feature_names_ = design_X.design_info.column_names
         # convert to 1d vector so we don't get a warning
         # from sklearn.
         design_y = column_or_1d(design_y)
@@ -203,10 +209,15 @@ class PatsyTransformer(BaseEstimator, TransformerMixin):
         Defaults to the scope in which PatsyModel was instantiated.
 
     NA_action : string or NAAction, default="drop"
-         What to do with rows that contain missing values. You can ``"drop"``
-         them, ``"raise"`` an error, or for customization, pass an `NAAction`
-         object.  See ``patsy.NAAction`` for details on what values count as
-         'missing' (and how to alter this).
+        What to do with rows that contain missing values. You can ``"drop"``
+        them, ``"raise"`` an error, or for customization, pass an `NAAction`
+        object.  See ``patsy.NAAction`` for details on what values count as
+        'missing' (and how to alter this).
+
+    Attributes
+    ----------
+    feature_names_ : list of string
+        Column names / keys of training data.
 
     return_type : string, default="ndarray"
         data type that transform method will return. Default is ``"ndarray"``
@@ -242,7 +253,7 @@ class PatsyTransformer(BaseEstimator, TransformerMixin):
         self._fit_transform(data, y)
         return self
 
-    def fit_transform(self, data,  y=None):
+    def fit_transform(self, data, y=None):
         """Fit the scikit-learn model using the formula and transform it.
 
         Parameters
@@ -269,6 +280,9 @@ class PatsyTransformer(BaseEstimator, TransformerMixin):
             return design
         else:
             return np.array(design)
+
+        self.feature_names_ = design.design_info.column_names
+        return np.array(design)
 
     def transform(self, data):
         """Transform with estimator using formula.
